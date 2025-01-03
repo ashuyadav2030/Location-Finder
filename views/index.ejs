@@ -50,13 +50,6 @@
             border-radius: 8px;
         }
 
-        .loading {
-            text-align: center;
-            font-size: 1.2rem;
-            color: #666;
-            margin-top: 10px;
-        }
-
         .error-message {
             text-align: center;
             color: red;
@@ -72,11 +65,8 @@
             <select id="stateDropdown" onchange="updateDistricts()">
                 <option value="">Select State</option>
             </select>
-            <select id="districtDropdown" onchange="updateSubDistricts()">
+            <select id="districtDropdown" onchange="updateVillages()">
                 <option value="">Select District</option>
-            </select>
-            <select id="subDistrictDropdown" onchange="updateVillages()">
-                <option value="">Select Sub-District</option>
             </select>
             <select id="villageDropdown" onchange="showOnMap()">
                 <option value="">Select Village</option>
@@ -92,7 +82,6 @@
 
         const stateDropdown = document.getElementById('stateDropdown');
         const districtDropdown = document.getElementById('districtDropdown');
-        const subDistrictDropdown = document.getElementById('subDistrictDropdown');
         const villageDropdown = document.getElementById('villageDropdown');
         const errorMessage = document.getElementById('errorMessage');
         const map = L.map('map').setView([20.5937, 78.9629], 5);
@@ -128,94 +117,59 @@
                 option.textContent = item;
                 dropdown.appendChild(option);
             });
-            if (dropdown === stateDropdown) {
-                populateDropdown(districtDropdown, [], 'Select District')
-                populateDropdown(subDistrictDropdown, [], 'Select Sub-District')
-                populateDropdown(villageDropdown, [], 'Select Village')
-            } else if (dropdown === districtDropdown) {
-                populateDropdown(subDistrictDropdown, [], 'Select Sub-District')
-                populateDropdown(villageDropdown, [], 'Select Village')
-            } else if (dropdown === subDistrictDropdown) {
-                populateDropdown(villageDropdown, [], 'Select Village')
-            }
         }
 
         function updateDistricts() {
             const state = stateDropdown.value;
             if (!state) {
-                populateDropdown(districtDropdown, [], 'Select District')
-                return;
-            }
-            const stateData = locationData.find(s => s.state === state)
-            if (stateData && stateData.districts) {
-                const districts = stateData.districts.map(d => d.district).sort()
-                populateDropdown(districtDropdown, districts, 'Select District')
-                clearError();
-            } else {
-                populateDropdown(districtDropdown, [], 'Select District')
-                showError('No districts found for the selected state.')
-            }
-        }
-
-        function updateSubDistricts() {
-            const state = stateDropdown.value;
-            const district = districtDropdown.value;
-            if (!state || !district) {
-                populateDropdown(subDistrictDropdown, [], 'Select Sub-District')
+                populateDropdown(districtDropdown, [], 'Select District');
+                populateDropdown(villageDropdown, [], 'Select Village');
                 return;
             }
             const stateData = locationData.find(s => s.state === state);
-            const districtData = stateData?.districts.find(d => d.district === district)
-            if (districtData && districtData.subDistricts) {
-                const subDistricts = districtData.subDistricts.map(sd => sd.subDistrict).sort()
-                populateDropdown(subDistrictDropdown, subDistricts, 'Select Sub-District')
+            if (stateData && stateData.districts) {
+                const subDistricts = stateData.districts.flatMap(d => d.subDistricts.map(sd => sd.subDistrict)).sort();
+                populateDropdown(districtDropdown, subDistricts, 'Select District');
                 clearError();
             } else {
-                populateDropdown(subDistrictDropdown, [], 'Select Sub-District')
-                showError('No sub-districts found for the selected district.')
+                populateDropdown(districtDropdown, [], 'Select District');
+                showError('No districts found for the selected state.');
             }
         }
 
         function updateVillages() {
             const state = stateDropdown.value;
-            const district = districtDropdown.value;
-            const subDistrict = subDistrictDropdown.value;
-            if (!state || !district || !subDistrict) {
-                populateDropdown(villageDropdown, [], 'Select Village')
+            const subDistrict = districtDropdown.value;
+            if (!state || !subDistrict) {
+                populateDropdown(villageDropdown, [], 'Select Village');
                 return;
             }
             const stateData = locationData.find(s => s.state === state);
-            const districtData = stateData?.districts.find(d => d.district === district)
-            const subDistrictData = districtData?.subDistricts.find(sd => sd.subDistrict === subDistrict)
+            const subDistrictData = stateData?.districts.flatMap(d => d.subDistricts).find(sd => sd.subDistrict === subDistrict);
             if (subDistrictData && subDistrictData.villages) {
-                const villages = subDistrictData.villages.map(v => v).sort()
-                populateDropdown(villageDropdown, villages, 'Select Village')
+                const villages = subDistrictData.villages.map(v => v).sort();
+                populateDropdown(villageDropdown, villages, 'Select Village');
                 clearError();
             } else {
-                populateDropdown(villageDropdown, [], 'Select Village')
-                showError('No villages found for the selected sub-district.')
+                populateDropdown(villageDropdown, [], 'Select Village');
+                showError('No villages found for the selected district.');
             }
         }
 
         function showOnMap() {
             const state = stateDropdown.value;
-            const district = districtDropdown.value;
-            const subDistrict = subDistrictDropdown.value;
+            // const subDistrict = districtDropdown.value;
             const village = villageDropdown.value;
 
-            if (state && district && subDistrict && village) {
-                const query = `${village}, ${subDistrict}, ${district}, ${state}, India`;
-
-                const encodedQuery = encodeURIComponent(query)
+            if (state &&  village) {
+                const query = `${village}, ${state}, India`;
 
                 const requestData = {
                     state: state,
-                    district: district,
-                    subDistrict: subDistrict,
                     village: village
                 };
 
-                showError('Loading coordinates...', 'info')
+                showError('Loading coordinates...', 'info');
 
                 fetch('/getcoordinates', {
                     method: 'POST',
@@ -231,12 +185,12 @@
                         }
 
                         const { lat, lon, display_name } = data;
-                        const coordinates = [lat, lon]
+                        const coordinates = [lat, lon];
 
-                        map.setView(coordinates, 14)
+                        map.setView(coordinates, 14);
 
                         if (currentMarker) {
-                            map.removeLayer(currentMarker);
+                            map.removeLayer(currentMarker)
                         }
 
                         currentMarker = L.marker(coordinates).addTo(map)
@@ -253,7 +207,6 @@
                 showError('Please select all location fields.');
             }
         }
-
 
         function showError(message, type = 'error') {
             if (type === 'error') {

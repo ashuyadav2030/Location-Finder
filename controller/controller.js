@@ -1,5 +1,5 @@
-const fs = require("fs");
-const axios = require("axios");
+const fs = require("fs")
+const axios = require("axios")
 
 const locationdata = (req, res) => {
   fs.readFile("data.json", "utf8", (err, data) => {
@@ -11,38 +11,40 @@ const locationdata = (req, res) => {
   })
 }
 
-const getcoordinates = async (req, res) => {
-  const { state, district, village } = req.body;
 
-  if (!state || !district || !village) {
-    return res.status(400).json({ error: "Please provide state, district, and village name." });
+const getcoordinates = async (req, res) => {
+  const { state, village } = req.body;
+  // console.log(req.body)
+
+  if (!state ||  !village) {
+    return res.status(400).json({ error: "Please provide state, and village name." })
   }
 
-  const query = `${village}, ${district}, ${state}`;
-  const encodedQuery = encodeURIComponent(query)
+  const query = `${village}, ${state}, India`;
+  const encodedQuery = encodeURIComponent(query);
 
-  const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=1&addressdetails=1&email=swapnildubey3636@gmail.com`;
+  const googleMapsApiKey = process.env.SECRET_KEY;
+  const googleGeocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedQuery}&key=${googleMapsApiKey}`;
 
   try {
-    const response = await axios.get(nominatimUrl);
+    const response = await axios.get(googleGeocodingUrl);
 
-    if (response.data.length === 0) {
-      return res.status(404).json({error:"No coordinates found for the selected location. Try selecting a nearby location."});
+    if (response.data.status !== "OK" || response.data.results.length === 0) {
+      return res.status(404).json({ error: "No coordinates found for the selected location. Try selecting a nearby location." })
     }
 
-    const { lat, lon, display_name } = response.data[0];
+    const location = response.data.results[0].geometry.location;
+    const displayName = response.data.results[0].formatted_address;
+
     return res.json({
-      lat: parseFloat(lat),
-      lon: parseFloat(lon),
-      display_name: display_name,
+      lat: location.lat,
+      lon: location.lng,
+      display_name: displayName,
     });
   } catch (error) {
-    console.error("Error fetching coordinates:", error);
-    return res.status(500).json({error: "An error occurred while fetching coordinates. Please try again later."});
+    console.error("Error fetching coordinates:", error)
+    return res.status(500).json({ error: "An error occurred while fetching coordinates. Please try again later." })
   }
 }
-
-
-
 
 module.exports = { locationdata, getcoordinates }
