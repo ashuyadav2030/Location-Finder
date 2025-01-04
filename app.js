@@ -1,6 +1,7 @@
 const express = require('express')
 const dotenv = require('dotenv')
 const routes = require('./routes/index')
+const mysql = require("./config/db")
 const cors = require('cors')
 dotenv.config()
 
@@ -12,7 +13,16 @@ app.use(cors())
 
 app.use('/', routes)
 
-const port = process.env.PORT;
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`)
+//Listen
+mysql.query("SELECT 1",(err) =>{
+    if(err){
+        console.err("Error testing MySQL connection:", err.message)
+        return;
+    }
+    console.log(("MySQL DB Connected"))
+
+    const port = process.env.PORT
+    app.listen(port, () => {
+        console.log((`Server is running on ${port}`))
+    })
 })

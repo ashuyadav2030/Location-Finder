@@ -1,3 +1,4 @@
+const mysql = require("../config/db")
 const fs = require("fs")
 const axios = require("axios")
 
@@ -11,40 +12,68 @@ const locationdata = (req, res) => {
   })
 }
 
+const districts = (req, res) => {
+  const { state } = req.body;
+  // console.log("State received:", state)
+  mysql.query(
+    "SELECT DISTINCT district FROM villagedata WHERE state = ?",
+    [state],
+    (err, results) => {
+      if (err) return res.status(500).send("Error fetching districts.")
+      // console.log("Districts from DB:", results)
+      res.json(results.map((row) => row.district))
+    }
+  )
+}
+
+const subdistricts = (req, res) => {
+  const { district } = req.query;
+  mysql.query(
+    "SELECT DISTINCT subdistrict FROM villagedata WHERE district = ?",
+    [district],
+    (err, results) => {
+      if (err) return res.status(500).send("Error fetching sub-districts.")
+      res.json(results.map((row) => row.subdistrict))
+    }
+  )
+}
+
+const villages = (req, res) => {
+  const { subDistrict } = req.query;
+  mysql.query(
+    "SELECT DISTINCT village FROM villagedata WHERE subdistrict = ?",
+    [subDistrict],
+    (err, results) => {
+      if (err) return res.status(500).send("Error fetching villages.")
+      res.json(results.map((row) => row.village))
+    }
+  )
+}
 
 const getcoordinates = async (req, res) => {
   const { state, village } = req.body;
-  // console.log(req.body)
-
-  if (!state ||  !village) {
-    return res.status(400).json({ error: "Please provide state, and village name." })
-  }
-
+  if (!state || !village)
+    return res.status(400).json({ error: "Missing data." })
   const query = `${village}, ${state}, India`;
-  const encodedQuery = encodeURIComponent(query);
-
-  const googleMapsApiKey = process.env.SECRET_KEY;
-  const googleGeocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedQuery}&key=${googleMapsApiKey}`;
-
+  const apiKey = process.env.SECRET_KEY;
   try {
-    const response = await axios.get(googleGeocodingUrl);
-
-    if (response.data.status !== "OK" || response.data.results.length === 0) {
-      return res.status(404).json({ error: "No coordinates found for the selected location. Try selecting a nearby location." })
-    }
-
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        query
+      )}&key=${apiKey}`
+    );
+    if (response.data.status !== "OK")
+      return res.status(404).json({ error: "Location not found." })
     const location = response.data.results[0].geometry.location;
     const displayName = response.data.results[0].formatted_address;
-
-    return res.json({
+    res.json({
       lat: location.lat,
       lon: location.lng,
       display_name: displayName,
     });
-  } catch (error) {
-    console.error("Error fetching coordinates:", error)
-    return res.status(500).json({ error: "An error occurred while fetching coordinates. Please try again later." })
+  } catch {
+    res.status(500).send("Error fetching coordinates.")
   }
 }
 
-module.exports = { locationdata, getcoordinates }
+module.exports = {locationdata,districts, subdistricts,villages,getcoordinates}
