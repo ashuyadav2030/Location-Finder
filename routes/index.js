@@ -8,7 +8,7 @@ router.get('/', (req,res) => {
 
 router.get('/locationdata', locationdata)
 
-router.post('/districts', districts)
+router.get('/districts', districts)
 
 router.get('/subdistricts', subdistricts)
 

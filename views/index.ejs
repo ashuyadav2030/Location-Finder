@@ -140,11 +140,11 @@
             if (!state) return;
 
             errorMessage.textContent = 'Loading districts...';
-            fetch('/districts', {
-                method: 'POST',
+            fetch(`/districts?state=${state}`, {
+                method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ state }),
             })
+
                 .then(response => {
                     if (!response.ok) throw new Error('Failed to fetch districts.');
                     return response.json();
@@ -161,28 +161,39 @@
 
         function updateSubDistricts() {
             const district = districtDropdown.value;
-            populateDropdown(subDistrictDropdown, [], 'Select Town');
-            populateDropdown(villageDropdown, [], 'Select Village');
+            const state = stateDropdown.value;
+            populateDropdown(subDistrictDropdown, [], 'Select Town')
+            populateDropdown(villageDropdown, [], 'Select Village')
 
-            if (!district) return;
+            if (!district || !state) return;
 
-            fetch(`/subdistricts?district=${encodeURIComponent(district)}`)
+            fetch(`/subdistricts?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`)
                 .then(response => response.json())
                 .then(subDistricts => populateDropdown(subDistrictDropdown, subDistricts, 'Select Town'))
                 .catch(() => showError('Unable to load Town.'));
         }
 
         function updateVillages() {
-            const subDistrict = subDistrictDropdown.value;
-            populateDropdown(villageDropdown, [], 'Select Village');
+    const state = stateDropdown.value;
+    const subdistrict = subDistrictDropdown.value;
+    const district = districtDropdown.value;
 
-            if (!subDistrict) return;
+    populateDropdown(villageDropdown, [], 'Select Village')
 
-            fetch(`/villages?subDistrict=${encodeURIComponent(subDistrict)}`)
-                .then(response => response.json())
-                .then(villages => populateDropdown(villageDropdown, villages, 'Select Village'))
-                .catch(() => showError('Unable to load villages.'))
-        }
+    if (!district || !subdistrict || !state) return;
+
+    fetch(`/villages?subdistrict=${encodeURIComponent(subdistrict)}&state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to fetch villages.')
+            return response.json()
+        })
+        .then(villages => populateDropdown(villageDropdown, villages, 'Select Village'))
+        .catch(err => {
+            console.error(err)
+            showError('Unable to load villages.')
+        });
+}
+
 
         function showOnMap() {
             const state = stateDropdown.value;
@@ -225,4 +236,5 @@
     </script>
 
 </body>
+
 </html>
