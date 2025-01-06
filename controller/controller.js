@@ -76,4 +76,4 @@ const getcoordinates = async (req, res) => {
   }
 }
 
-module.exports = {locationdata,districts, subdistricts,villages,getcoordinates}
+module.exports = {locationdata, districts, subdistricts, villages, getcoordinates}
