@@ -177,6 +177,6 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 For queries, feel free to reach out:
 
-- **Name**: [Your Name]
-- **Email**: [Your Email]
-- **GitHub**: [Your GitHub Profile Link]
+- **Name**: Swapnil Dubey
+- **Email**: swapnildubey3636@gmail.ocm
+
